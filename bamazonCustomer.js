@@ -42,12 +42,23 @@ let displayDetails = (product) => {
         name: 'purchaseQty',
         message: "How many would you like to purchase? (enter 0 to return to the products list)",
         validate: function(qty) {
-          return ( Number.isInteger(qty) && qty >= 0 ); 
+          num = Number.parseFloat(qty);
+
+          if (!Number.isInteger(num) || num < 0) {
+            return false;
+          } else if (num > res[0].stock_quantity) {
+            console.log(`\n\n-=- You can't order that many! Check the current stock (${res[0].stock_quantity}) and try again.\n`)
+            return false;
+          } else return true;
         }
       })
       .then( (qty) => {
-        console.log(qty.purchaseQty);
-      }
+        let orderQty = Number.parseInt(qty.purchaseQty);
+        if ( orderQty === 0) {
+          return displayProducts();
+        }
+        console.log(`Order Complete!\n\n==========| Invoice |==========\nItem: ${product}\nPrice: $${res[0].price}\nQuantity: ${orderQty}\n-----------------\nPurchase Total: ${res[0].price * orderQty}`);
+      })
     }  
   )
 }
