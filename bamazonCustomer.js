@@ -1,10 +1,12 @@
+"use strict"
+
 const db = require('./connectDB.js');
 const inquirer = require('inquirer');
 
 // Connect to the Database
 db.connect( (err) => {
   if (err) throw err;
-  console.log(`You are now connected to the Bamazon database (ID:${db.threadId})`);
+  console.log(`You are now connected to the Bamazon Management database (ID:${db.threadId})`);
   displayProducts();
 })
 
@@ -47,7 +49,7 @@ let displayDetails = (product) => {
         message: "How many would you like to purchase? (enter 0 to return to the products list)",
         // Validate for only positive integers and 0
         validate: function(input) {
-          num = Number.parseFloat(input);
+          let num = Number.parseFloat(input);
           if (!Number.isInteger(num) || num < 0) return false;
           else if (num > stock) {
             console.log(`\n\n-=- You can't order that many! Check the current stock (${stock}) and try again.\n`)
@@ -67,7 +69,7 @@ let displayDetails = (product) => {
 }
 
 // just like it sounds...
-let confirmPurchase = function(product, stock, qty, price) {
+let confirmPurchase = (product, stock, qty, price) => {
   // Make sure this number is pretty
   let totalPrice = Math.round((price*qty)*100)/100;
   inquirer.prompt({
@@ -83,7 +85,7 @@ let confirmPurchase = function(product, stock, qty, price) {
 }
 
 // complete the transaction by updating inventories in the DB and presenting invoice to user
-let updateStock = function(product, stock, qty, price, totalPrice) {
+let updateStock = (product, stock, qty, price, totalPrice) => {
   db.query(`UPDATE products SET ? WHERE ?`,
     [{stock_quantity: stock-qty},
     {product_name: product}],
