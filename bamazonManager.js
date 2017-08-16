@@ -32,7 +32,7 @@ let displayActions = () => {
         viewLowInventory();
         break;
       case 'Add to Inventory':
-        addInventory();
+        pullInventory();
         break;
       case 'Add New Product':
         addProduct();
@@ -72,15 +72,72 @@ let viewLowInventory = () => {
 
     console.log('\nLow Inventory Items\n-------------------------');
     res.forEach( (product) => {
-      console.log(`${producb t.product_name} (${product.stock_quantity})`);
+      console.log(`${product.product_name} (${product.stock_quantity})`);
     })
     console.log()
     displayActions();
   })
 }
 
-let addInventory = () => {
+let pullInventory = () => {
+  let productMenu = [];
+  // Pull the relevant data from the database, sort by department
+  db.query("SELECT product_name, stock_quantity, department_name, item_id FROM products ORDER BY department_name ASC",
+    (err, res) => {
+      if (err) throw err;
 
+      res.forEach((product) => {
+        let str = `${item_id} - ${department_name} - ${product_name} stock: ${stock_quantity}`;
+        productMenu.push(str);
+      })
+    }
+    inquirer.prompt({
+      type: 'list',
+      name: 'product',
+      message: 'Select a product to add inventory',
+      choices: productMenu
+    })
+    .then((choice) => {
+      let words = choice.product.split(" ");
+      itemId = words[0];
+      addInventory(itemId);
+    })
+  )
+}
+
+let addInventory = (id) => {
+  db.query("SELECT product_name, stock_quantity, price FROM products WHERE ?",
+    {item_id: id},
+    (err, res) => {
+      if (err) throw error;
+
+      console.log(`${product_name} - current stock: ${stock_quantity}`)
+      inquirer.prompt({
+        type: 'input',
+        name: 'addQty',
+        message: "How many units would you like to add?",
+        validate: function(qty) {
+          let num = Number.parseFloat(input);
+          if (!Number.isInteger(num) || num < 0) return false;
+          else return true;
+        }
+      })
+      .then((input) => {
+        db.query("UPDATE products SET ? WHERE ?",
+          [{
+            stock_quantity: input.addQty
+          },
+          {
+            item_id: id
+          }],
+          (err, res) => {
+            if (err) throw err;
+            console.log(res);
+          }
+        )
+      })
+    }
+  )
 }
 
 let addProduct = () => {
