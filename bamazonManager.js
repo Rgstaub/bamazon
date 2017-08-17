@@ -87,7 +87,7 @@ let pullInventory = () => {
       if (err) throw err;
 
       res.forEach((product) => {
-        let str = `${product.item_id} - ${product.department_name} - ${product.product_name} stock: ${product.stock_quantity}`;
+        let str = `${product.department_name} - ${product.product_name} stock: (${product.stock_quantity}} item#${product.item_id}`;
         productMenu.push(str);
       })
     
@@ -98,8 +98,8 @@ let pullInventory = () => {
         choices: productMenu
       })
       .then((choice) => {
-        let words = choice.product.split(" ");
-        let itemId = Number.parseInt(words[0]);
+        let words = choice.product.split("#");
+        let itemId = parseInt(words[1]);
         console.log("ITEM ID");
         console.log(itemId);
         return addInventory(itemId);
@@ -121,14 +121,14 @@ let addInventory = (id) => {
         name: 'addQty',
         message: "How many units would you like to add?",
         validate: function(qty) {
-          let num = Number.parseFloat(qty);
+          let num = parseFloat(qty);
           if (!Number.isInteger(num) || num < 0) return false;
           else return true;
         }
       })
       .then((input) => {
 
-        let newQty = Number.parseInt(input.addQty) + res[0].stock_quantity;
+        let newQty = parseInt(input.addQty) + res[0].stock_quantity;
         db.query("UPDATE products SET ? WHERE ?",
           [{
             stock_quantity: newQty
@@ -164,8 +164,8 @@ let addProduct = () => {
       name: 'price',
       message: 'Enter the price.',
       validate: function(price) {
-        let num = Number.parseFloat(qty);
-        if (!Number.isInteger(num) || num < 0) return false;
+        let num = parseFloat(price);
+        if (!isFinite(num) || num < 0) return false;
         else return true;
       }
     },
@@ -174,7 +174,7 @@ let addProduct = () => {
       name: 'stock',
       message: 'Enter the starting stock.',
       validate: function(qty) {
-        let num = Number.parseFloat(qty);
+        let num = parseFloat(qty);
         if (!Number.isInteger(num) || num < 0) return false;
         else return true;
       }      
@@ -187,8 +187,4 @@ let addProduct = () => {
     let productStock = response.stock
     console.log(`${productName} ${productDepartment} ${productPrice} ${productStock}`)
   })
-}
-
-function isNumber(n) {
-  return !isNaN(parseFloat(n)) && isFinite(n);
 }
