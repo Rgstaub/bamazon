@@ -1,4 +1,4 @@
-"use strict"
+// "use strict"
 
 const db = require('./connectDB.js');
 const inquirer = require('inquirer');
@@ -60,7 +60,7 @@ let viewProducts = () => {
     })
     // Display the table
     console.log(table.toString());
-    displayActions();
+    return displayActions();
   })
 }
 
@@ -75,7 +75,7 @@ let viewLowInventory = () => {
       console.log(`${product.product_name} (${product.stock_quantity})`);
     })
     console.log()
-    displayActions();
+    return displayActions();
   })
 }
 
@@ -87,52 +87,59 @@ let pullInventory = () => {
       if (err) throw err;
 
       res.forEach((product) => {
-        let str = `${item_id} - ${department_name} - ${product_name} stock: ${stock_quantity}`;
+        let str = `${product.item_id} - ${product.department_name} - ${product.product_name} stock: ${product.stock_quantity}`;
         productMenu.push(str);
       })
+    
+      inquirer.prompt({
+        type: 'list',
+        name: 'product',
+        message: 'Select a product to add inventory',
+        choices: productMenu
+      })
+      .then((choice) => {
+        let words = choice.product.split(" ");
+        let itemId = Number.parseInt(words[0]);
+        console.log("ITEM ID");
+        console.log(itemId);
+        return addInventory(itemId);
+      })  
     }
-    inquirer.prompt({
-      type: 'list',
-      name: 'product',
-      message: 'Select a product to add inventory',
-      choices: productMenu
-    })
-    .then((choice) => {
-      let words = choice.product.split(" ");
-      itemId = words[0];
-      addInventory(itemId);
-    })
   )
 }
 
 let addInventory = (id) => {
+
   db.query("SELECT product_name, stock_quantity, price FROM products WHERE ?",
     {item_id: id},
     (err, res) => {
       if (err) throw error;
-
-      console.log(`${product_name} - current stock: ${stock_quantity}`)
+      let productName = res[0].product_name;
+      console.log(`${productName} - current stock: ${res[0].stock_quantity}`)
       inquirer.prompt({
         type: 'input',
         name: 'addQty',
         message: "How many units would you like to add?",
         validate: function(qty) {
-          let num = Number.parseFloat(input);
+          let num = Number.parseFloat(qty);
           if (!Number.isInteger(num) || num < 0) return false;
           else return true;
         }
       })
       .then((input) => {
+
+        let newQty = Number.parseInt(input.addQty) + res[0].stock_quantity;
         db.query("UPDATE products SET ? WHERE ?",
           [{
-            stock_quantity: input.addQty
+            stock_quantity: newQty
           },
           {
             item_id: id
           }],
           (err, res) => {
             if (err) throw err;
-            console.log(res);
+            console.log(`\nInventory updated. New stock for ${productName} is ${newQty}.\n`);
+            return displayActions();
           }
         )
       })
@@ -141,5 +148,47 @@ let addInventory = (id) => {
 }
 
 let addProduct = () => {
+  inquirer.prompt([
+    {
+      type: 'input',
+      name: 'productName',
+      message: 'Enter the product name.'
+    },
+    {
+      type: 'input',
+      name: 'departmentName',
+      message: 'Enter the department name.'
+    },
+    {
+      type: 'input',
+      name: 'price',
+      message: 'Enter the price.',
+      validate: function(price) {
+        let num = Number.parseFloat(qty);
+        if (!Number.isInteger(num) || num < 0) return false;
+        else return true;
+      }
+    },
+    {
+      type: 'input',
+      name: 'stock',
+      message: 'Enter the starting stock.',
+      validate: function(qty) {
+        let num = Number.parseFloat(qty);
+        if (!Number.isInteger(num) || num < 0) return false;
+        else return true;
+      }      
+    }    
+  ])
+  .then((response) => {
+    let productName = response.productName;
+    let productDepartment = response.departmentName;
+    let productPrice = response.price;
+    let productStock = response.stock
+    console.log(`${productName} ${productDepartment} ${productPrice} ${productStock}`)
+  })
+}
 
+function isNumber(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
 }
