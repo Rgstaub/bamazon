@@ -43,7 +43,7 @@ let displayActions = () => {
 
 // Get all the products and lay them out in a table
 let viewProducts = () => {
-  db.query(`SELECT * FROM products`, (err, res) => {
+  db.query(`SELECT * FROM products ORDER BY department_name`, (err, res) => {
     if (err) throw err;
     // create the table with headers and column width
     let table = new Table({
@@ -87,7 +87,7 @@ let pullInventory = () => {
       if (err) throw err;
 
       res.forEach((product) => {
-        let str = `${product.item_id} - ${product.department_name} - ${product.product_name} stock: ${product.stock_quantity}`;
+        let str = `${product.department_name} - ${product.product_name} stock: (${product.stock_quantity}) item#${product.item_id}`;
         productMenu.push(str);
       })
     
@@ -98,10 +98,8 @@ let pullInventory = () => {
         choices: productMenu
       })
       .then((choice) => {
-        let words = choice.product.split(" ");
-        let itemId = Number.parseInt(words[0]);
-        console.log("ITEM ID");
-        console.log(itemId);
+        let words = choice.product.split("#");
+        let itemId = parseInt(words[1]);
         return addInventory(itemId);
       })  
     }
@@ -109,26 +107,26 @@ let pullInventory = () => {
 }
 
 let addInventory = (id) => {
-
+12
   db.query("SELECT product_name, stock_quantity, price FROM products WHERE ?",
     {item_id: id},
     (err, res) => {
       if (err) throw error;
       let productName = res[0].product_name;
-      console.log(`${productName} - current stock: ${res[0].stock_quantity}`)
+      console.log(`\n${productName} - current stock: ${res[0].stock_quantity}`)
       inquirer.prompt({
         type: 'input',
         name: 'addQty',
         message: "How many units would you like to add?",
         validate: function(qty) {
-          let num = Number.parseFloat(qty);
+          let num = parseFloat(qty);
           if (!Number.isInteger(num) || num < 0) return false;
           else return true;
         }
       })
       .then((input) => {
 
-        let newQty = Number.parseInt(input.addQty) + res[0].stock_quantity;
+        let newQty = parseInt(input.addQty) + res[0].stock_quantity;
         db.query("UPDATE products SET ? WHERE ?",
           [{
             stock_quantity: newQty
@@ -138,7 +136,7 @@ let addInventory = (id) => {
           }],
           (err, res) => {
             if (err) throw err;
-            console.log(`\nInventory updated. New stock for ${productName} is ${newQty}.\n`);
+            console.log(`\n------------------------------------------------\nInventory updated. New stock for ${productName} is ${newQty}.\n`);
             return displayActions();
           }
         )
@@ -152,29 +150,29 @@ let addProduct = () => {
     {
       type: 'input',
       name: 'productName',
-      message: 'Enter the product name.'
+      message: 'Enter the product name: '
     },
     {
       type: 'input',
       name: 'departmentName',
-      message: 'Enter the department name.'
+      message: 'Enter the department name: '
     },
     {
       type: 'input',
       name: 'price',
-      message: 'Enter the price.',
+      message: 'Enter the price: ',
       validate: function(price) {
-        let num = Number.parseFloat(qty);
-        if (!Number.isInteger(num) || num < 0) return false;
+        let num = parseFloat(price);
+        if (!isFinite(num) || num < 0) return false;
         else return true;
       }
     },
     {
       type: 'input',
       name: 'stock',
-      message: 'Enter the starting stock.',
+      message: 'Enter the starting stock: ',
       validate: function(qty) {
-        let num = Number.parseFloat(qty);
+        let num = parseFloat(qty);
         if (!Number.isInteger(num) || num < 0) return false;
         else return true;
       }      
@@ -186,9 +184,17 @@ let addProduct = () => {
     let productPrice = response.price;
     let productStock = response.stock
     console.log(`${productName} ${productDepartment} ${productPrice} ${productStock}`)
+    db.query(`INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES ('${productName}', '${productDepartment}', '${productPrice}', '${productStock}');`,
+    // db.query(`INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES ?`,
+    // {
+    //   product_name: productName,
+    //   department_name: productDepartment,
+    //   price: productPrice,
+    //   stock_quantity: productStock
+    // },
+    (err, res) => {
+      if (err) throw err;
+      console.log(`-----------------------------------\nYou added ${productName} to the ${productDepartment} department.\bPrice: ${productPrice}\n Stock: ${productStock}`)
+    })
   })
-}
-
-function isNumber(n) {
-  return !isNaN(parseFloat(n)) && isFinite(n);
 }
